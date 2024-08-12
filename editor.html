@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #imageContainer {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        #imageCanvas {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        input[type="color"] {
+            width: 50px;
+            height: 30px;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Editor</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <div id="imageContainer">
+        <canvas id="imageCanvas"></canvas>
+        <div class="controls">
+            <div class="control-group">
+                <label for="brightness">Brightness:</label>
+                <input type="range" id="brightness" min="-100" max="100" value="0">
+                <input type="color" id="brightnessColor" value="#ffffff">
+            </div>
+            <div class="control-group">
+                <label for="contrast">Contrast:</label>
+                <input type="range" id="contrast" min="-100" max="100" value="0">
+            </div>
+            <div class="control-group">
+                <label for="saturation">Saturation:</label>
+                <input type="range" id="saturation" min="-100" max="100" value="0">
+            </div>
+            <div class="control-group">
+                <label for="hue">Hue Rotation:</label>
+                <input type="range" id="hue" min="0" max="360" value="0">
+            </div>
+            <button id="resetButton">Reset</button>
+            <button id="downloadButton">Download</button>
+        </div>
+    </div>
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const imageCanvas = document.getElementById('imageCanvas');
+        const brightnessInput = document.getElementById('brightness');
+        const brightnessColorInput = document.getElementById('brightnessColor');
+        const contrastInput = document.getElementById('contrast');
+        const saturationInput = document.getElementById('saturation');
+        const hueInput = document.getElementById('hue');
+        const resetButton = document.getElementById('resetButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const ctx = imageCanvas.getContext('2d');
+        
+        let image = null;
+
+        imageUpload.addEventListener('change', handleImageUpload);
+        brightnessInput.addEventListener('input', applyFilters);
+        brightnessColorInput.addEventListener('input', applyFilters);
+        contrastInput.addEventListener('input', applyFilters);
+        saturationInput.addEventListener('input', applyFilters);
+        hueInput.addEventListener('input', applyFilters);
+        resetButton.addEventListener('click', resetFilters);
+        downloadButton.addEventListener('click', downloadImage);
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                image = new Image();
+                image.onload = () => {
+                    imageCanvas.width = image.width;
+                    imageCanvas.height = image.height;
+                    applyFilters();
+                };
+                image.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function applyFilters() {
+            if (!image) return;
+            
+            const brightness = brightnessInput.value / 100;
+            const brightnessColor = brightnessColorInput.value;
+            const contrast = (contrastInput.value / 100) + 1;
+            const saturation = (saturationInput.value / 100) + 1;
+            const hue = hueInput.value + 'deg';
+
+            ctx.filter = `brightness(${brightness + 1}) contrast(${contrast}) saturate(${saturation}) hue-rotate(${hue})`;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(image, 0, 0, image.width, image.height);
+
+            // Apply brightness color
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = brightnessColor;
+            ctx.fillRect(0, 0, imageCanvas.width, imageCanvas.height);
+
+            // Reset composite operation
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function resetFilters() {
+            brightnessInput.value = 0;
+            brightnessColorInput.value = '#ffffff';
+            contrastInput.value = 0;
+            saturationInput.value = 0;
+            hueInput.value = 0;
+            applyFilters();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'edited_image.png';
+            link.href = imageCanvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
